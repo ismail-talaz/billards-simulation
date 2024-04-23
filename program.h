@@ -2,6 +2,7 @@
 #include <bits/stdc++.h>
 #include <cmath>
 
+const double THRESHOLD = 0.00001;
 #define FMAX 340282346638528859811704183484516925440.0000000000000000
 
 
@@ -35,6 +36,9 @@ class Program{
         vector<Ball> balls;
         vector<float> times;
 
+        vector<vector<int>> stackofcolliders;
+        float min_time_to_collide=FMAX;
+
         Program(vector<Ball> input,vector<float> input_times){
             for(auto Ball : input){
                 numberofballs++;
@@ -62,7 +66,7 @@ class Program{
         float calculateFirstTwoBalls(){
             return calculateTimeToCollide(balls[0],balls[1]);
         };
-        vector<int> findFirstCollision();
+        void findFirstCollision();
         void timeSkip(float time);
         void collide(int index1, int index2, float time);
         void startSimulation();
@@ -73,6 +77,17 @@ class Program{
         void collideWithWall(int index, float wall,float time);
         float calculateTimeToCollideWall(Ball b, float wall);
         vector<float> calculateWallCollide(Ball b);
+
+        void printStack(){
+            cout << "--------------------------\n";
+            for(int i=0;i<stackofcolliders.size();i++){
+                for(int j=0;j<2;j++){
+                    cout << stackofcolliders[i][j];
+                }
+                cout <<" ";
+            }
+            cout << "--------------------------\n";
+        }
 };
 
 
@@ -131,19 +146,19 @@ float Program::calculateTimeToCollide(Ball b1, Ball b2){
     float theta1 = (-b+sqrt(b*b-4*a*c))/(2*a);
     float theta2 = (-b-sqrt(b*b-4*a*c))/(2*a);
 
-    float t1 = (-1*log(abs(theta1)))/fr;  // need to checked these values.
-    float t2 = (-1*log(abs(theta2)))/fr;  //
+    float t1 = (-1*log(abs(theta1)))/fr+0.0;  // need to checked these values.
+    float t2 = (-1*log(abs(theta2)))/fr+0.0;  //
 
     float t = min(t1,t2)>=0?min(t1,t2):max(t1,t2)>=0?max(t1,t2):FMAX;
 
     return t;
 }
 
-vector<int> Program::findFirstCollision(){  // aynı anda olan çarpışmalar için ne yapacağımı tam bilmiyorum şu an
+void Program::findFirstCollision(){  // aynı anda olan çarpışmalar için ne yapacağımı tam bilmiyorum şu an
     vector<int> colliders;
     float time;
 
-    float min_time = times[times.size()-1]-current_time;
+    min_time_to_collide = times[times.size()-1]-current_time;
 
     for(int i=0; i<numberofballs;i++){
 
@@ -154,11 +169,19 @@ vector<int> Program::findFirstCollision(){  // aynı anda olan çarpışmalar i�
         time = information[0];
         int wall = information[1];
 
-        if(time <= min_time && (collidingTimesWithWall[wall][i] != current_time)){
-            min_time = time;
+        if(time < min_time_to_collide && (collidingTimesWithWall[wall][i] != current_time)){
+            min_time_to_collide = time;
             colliders.clear();
             colliders.push_back(i);
-            colliders.push_back(information[1]+1000);     // there will be collision
+            colliders.push_back(information[1]+1000);
+            stackofcolliders.clear();
+            stackofcolliders.push_back(colliders);
+        }
+        else if(time == min_time_to_collide && (collidingTimesWithWall[wall][i] != current_time)){
+            colliders.clear();
+            colliders.push_back(i);
+            colliders.push_back(information[1]+1000);
+            stackofcolliders.push_back(colliders);
         }
         
 
@@ -173,23 +196,29 @@ vector<int> Program::findFirstCollision(){  // aynı anda olan çarpışmalar i�
 
             time = calculateTimeToCollide(b1,b2);
 
-            if (time >= 0 && time <= min_time){
-                min_time = time;
+            if (time >= 0 && time < min_time_to_collide){
+                min_time_to_collide = time;   // there will be collision
+
                 colliders.clear();
                 colliders.push_back(i);
-                colliders.push_back(j);     // there will be collision
-            } 
+                colliders.push_back(j);
+                stackofcolliders.clear();
+                stackofcolliders.push_back(colliders);
+            }
+            else if(time >= 0 && time == min_time_to_collide){
+                colliders.clear();
+                colliders.push_back(i);
+                colliders.push_back(j);
+                stackofcolliders.push_back(colliders);
+            }
         }
     }
-
-
-    return colliders;
 }
 
 
 void Program::timeSkip(float time){
-
-    if (time == 0) return;
+    
+    if (time+0.0 < THRESHOLD) return;
 
     for(int i=0; i<numberofballs;i++){
         balls[i].x = balls[i].x + balls[i].vx*(1-exp(-fr*time))/fr;
@@ -207,7 +236,7 @@ void Program::timeSkip(float time){
 
 void Program::collide(int index1, int index2, float time){ //
 
-    timeSkip(time);
+    //timeSkip(time);
 
     Ball b1 = balls[index1];
     Ball b2 = balls[index2];
@@ -231,10 +260,10 @@ void Program::collide(int index1, int index2, float time){ //
     float v2fx = v1*cos(theta1-phi)*cos(phi)+v2*sin(theta2-phi)*cos(phi+M_PI/2);
     float v2fy = v1*cos(theta1-phi)*sin(phi)+v2*sin(theta2-phi)*sin(phi+M_PI/2);
 
-    balls[index1].vx = v2fx;
-    balls[index1].vy = v2fy;
-    balls[index2].vx = v1fx;
-    balls[index2].vy = v1fy;
+    balls[index1].vx = abs(v2fx)>THRESHOLD?v2fx:0;
+    balls[index1].vy = abs(v2fy)>THRESHOLD?v2fy:0;
+    balls[index2].vx = abs(v1fx)>THRESHOLD?v1fx:0;
+    balls[index2].vy = abs(v1fy)>THRESHOLD?v1fy:0;
 
     cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpıştıktan sonra: ";
     printSnapshot(current_time);
@@ -244,19 +273,28 @@ void Program::collide(int index1, int index2, float time){ //
 void Program::startSimulation(){
 
     while(times.size()){
-        vector<int> colliders = findFirstCollision();
+        findFirstCollision();
+        printStack();
 
-        if(colliders.empty()){ // no collision before input TIME
+        if(stackofcolliders.empty()){
             timeSkip(times[times.size()-1]-current_time);
         }
-        else if (colliders[1] < 1000){
-            float min_time = calculateTimeToCollide(balls[colliders[0]],balls[colliders[1]]);
-            collide(colliders[0],colliders[1], min_time);
+        else{
+            timeSkip(min_time_to_collide);
+            while(stackofcolliders.empty() == false){
+                vector<int> colliders = stackofcolliders[stackofcolliders.size()-1];
+                if (colliders[1] < 1000){
+                    //float min_time = calculateTimeToCollide(balls[colliders[0]],balls[colliders[1]]);
+                    collide(colliders[0],colliders[1], min_time_to_collide);
+                }
+                else{ // duvarla çarpışma
+                    //float min_time = calculateTimeToCollideWall(balls[colliders[0]],colliders[1]-1000);
+                    collideWithWall(colliders[0],colliders[1]-1000,min_time_to_collide);
+                }
+                stackofcolliders.pop_back();
+            }
         }
-        else{ // duvarla çarpışma
-            float min_time = calculateTimeToCollideWall(balls[colliders[0]],colliders[1]-1000);
-            collideWithWall(colliders[0],colliders[1]-1000,min_time);
-        }
+        
     }
 }
 
@@ -337,12 +375,12 @@ float Program::calculateTimeToCollideWall(Ball b1, float wall){
 void Program::collideWithWall(int index, float wall, float time){
 
 
-    timeSkip(time);
+    //timeSkip(time);
 
     collidingTimesWithWall[wall][index] = current_time;
     
-    cout << "Duvarla çarpışmadan önce : ";
-    printSnapshot(current_time);
+    /*cout << "Duvarla çarpışmadan önce : ";
+    printSnapshot(current_time);*/
 
     if(wall == 0){
         balls[index].vy = -balls[index].vy;
@@ -357,8 +395,8 @@ void Program::collideWithWall(int index, float wall, float time){
         balls[index].vx = -balls[index].vx;
     }
 
-    cout << "Duvarla çarpışmadan sonra : ";
-    printSnapshot(current_time);
+    /*cout << "Duvarla çarpışmadan sonra : ";
+    printSnapshot(current_time);*/
     
 }
 
