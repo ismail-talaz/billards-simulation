@@ -1,11 +1,14 @@
 #include <iostream>
 #include <bits/stdc++.h>
 #include <cmath>
+#include "nlohmann/json.hpp"
+#include <fstream>
+#include <queue>
 
 const double THRESHOLD = 0.00001;
 #define FMAX 340282346638528859811704183484516925440.0000000000000000
 
-
+using json = nlohmann::json;
 using namespace std;
 
 struct Ball{
@@ -29,15 +32,55 @@ class Program{
         unordered_set<int> lastColliders;// deacceleration rate.    
         float current_time=0;
         int numberofballs=0;
-        float radius=1.0;
+        float radius;
         vector<vector<float>> collidingTimes;
         vector<vector<float>> collidingTimesWithWall = vector<vector<float>>(4,vector<float>());
         Table table;
         vector<Ball> balls;
-        vector<float> times;
+        queue<float> times;
+        json out;
 
         vector<vector<int>> stackofcolliders;
         float min_time_to_collide=FMAX;
+
+        Program(){
+            ifstream f("initial-state.json");
+            json inp = json::parse(f);
+
+            table.fr = inp["table"]["deacceleration"];
+            table.height = inp["table"]["height"];
+            table.width = inp["table"]["width"];
+
+            radius = inp["ball"]["radius"];
+
+            numberofballs = inp["balls"].size();
+            for(int i=0; i<numberofballs; i++){
+                Ball temp;
+                temp.x = inp["balls"][i]["position"]["x"];
+                temp.y = inp["balls"][i]["position"]["y"];
+                temp.vx = inp["balls"][i]["velocity"]["x"];
+                temp.vy = inp["balls"][i]["velocity"]["y"];
+                balls.push_back(temp);
+            }
+
+            collidingTimes.resize(numberofballs,vector<float>());
+            for(int i=0;i<numberofballs;i++){collidingTimes[i].resize(numberofballs,-FMAX);}
+            for(int i=0;i<4;i++){collidingTimesWithWall[i].resize(numberofballs,-FMAX);}
+
+            ifstream t("snapshot-times.txt");
+
+            string line;
+            try{
+                while(getline(t,line)){
+                    float time = stoi(line);
+                    times.push(time);
+                }
+            }catch(exception& e){
+                cerr << "It must be given time input";
+            }
+
+            out["positions"] = vector<vector<json>>();
+        }
 
         Program(vector<Ball> input,vector<float> input_times){
             for(auto Ball : input){
@@ -46,7 +89,7 @@ class Program{
             }
 
             for(auto time : input_times){
-                times.push_back(time);
+                times.push(time);
             }
 
             table.width=10;
@@ -59,14 +102,15 @@ class Program{
 
         float calculateTimeToCollide(Ball b1, Ball b2);
         float calculateTimeToCollideWithoutFR(Ball b1, Ball b2);
-        float calculateFirstTwoBalls(){
-            return calculateTimeToCollide(balls[0],balls[1]);
-        };
+
         void findFirstCollision();
         void timeSkip(float time);
         void collide(int index1, int index2, float time);
         void startSimulation();
-        void printSnapshot(float time);
+
+        void printSnapshot();
+        void exportSnapshot();
+
         float calculateVelocity(Ball b1);
         float calculateTheta(Ball b1);
         float calculatePhi(Ball b1);
@@ -163,7 +207,7 @@ void Program::findFirstCollision(){  // aynı anda olan çarpışmalar için ne 
     vector<int> colliders;
     float time;
 
-    min_time_to_collide = times[times.size()-1]-current_time;
+    min_time_to_collide = times.front()-current_time;
 
     for(int i=0; i<numberofballs;i++){
 
@@ -222,10 +266,11 @@ void Program::findFirstCollision(){  // aynı anda olan çarpışmalar için ne 
 
 
 void Program::timeSkip(float time){
+    float fr = table.fr;
     
     if (time+0.0 < THRESHOLD) return;
 
-    if(fr != 0.0){ // if there is deacceleration, update velocities.
+    if(fr != 0.0){ // if there is deacceleration, update velocities and positions.
         for(int i=0; i<numberofballs;i++){
             balls[i].x = balls[i].x + balls[i].vx*(1-exp(-fr*time))/fr;
             balls[i].y = balls[i].y + balls[i].vy*(1-exp(-fr*time))/fr;
@@ -233,11 +278,18 @@ void Program::timeSkip(float time){
             balls[i].vy = balls[i].vy/exp(fr*time);
         }
     }
+    else{
+        for(int i=0; i<numberofballs;i++){ // update positions only. velocities are constant
+            balls[i].x = balls[i].x + balls[i].vx*time;
+            balls[i].y = balls[i].y + balls[i].vy*time;
+        }
+    }
 
     current_time += time;
-    if(current_time == times[times.size()-1]){
-        times.pop_back();
-        printSnapshot(current_time);
+    if(current_time == times.front()){
+        times.pop();
+        printSnapshot();
+        exportSnapshot();
     }
 }
 
@@ -249,7 +301,7 @@ void Program::collide(int index1, int index2, float time){ //
     Ball b2 = balls[index2];
     
     cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpışmadan önce : ";
-    printSnapshot(current_time);
+    printSnapshot();
 
     collidingTimes[index1][index2] = current_time;
     collidingTimes[index2][index1] = current_time;
@@ -273,18 +325,19 @@ void Program::collide(int index1, int index2, float time){ //
     balls[index2].vy = abs(v1fy)>THRESHOLD?v1fy:0;
 
     cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpıştıktan sonra: ";
-    printSnapshot(current_time);
+    printSnapshot();
 
 }
 
 void Program::startSimulation(){
+    ofstream o("output.json");
 
-    while(times.size()){
+    while(!times.empty()){
         findFirstCollision();
         printStack();
 
         if(stackofcolliders.empty()){
-            timeSkip(times[times.size()-1]-current_time);
+            timeSkip(times.front()-current_time);
         }
         else{
             timeSkip(min_time_to_collide);
@@ -303,17 +356,32 @@ void Program::startSimulation(){
         }
         
     }
+
+    o << std::setw(4) << out << std::endl;
 }
 
-void Program::printSnapshot(float time){
+void Program::printSnapshot(){
     cout << "---------------"<< "\n";
-    cout << "Time: "<< time << "\n";
+    cout << "Time: "<< current_time << "\n";
     for(int b=0;b<balls.size();b++){
         std::cout << "  Ball" << b << " x: " << std::fixed << std::setprecision(2) << balls[b].x
                       << " y: " << std::fixed << std::setprecision(6) << balls[b].y
                       << " vx: " << std::fixed << std::setprecision(6) << balls[b].vx
                       << " vy: " << std::fixed << std::setprecision(6) << balls[b].vy << "\n";
     }
+}
+
+void Program::exportSnapshot(){
+    vector<json> datas;
+
+    for(int i=0;i<numberofballs;i++){
+        json data;
+        data["x"] = balls[i].x;
+        data["y"] = balls[i].y;
+        datas.push_back(data);
+    }
+
+    out["positions"].push_back(datas);
 }
 
 
@@ -369,6 +437,7 @@ vector<float> Program::calculateWallCollide(Ball b){
 }
 
 float Program::calculateTimeToCollideWall(Ball b1, float wall){
+    float fr = table.fr;
     if(fr != 0){
         if(wall == 0){
             return -log(-fr*(table.height-radius-b1.y-b1.vy/fr)/b1.vy)/fr;
@@ -408,7 +477,7 @@ void Program::collideWithWall(int index, float wall, float time){
     collidingTimesWithWall[wall][index] = current_time;
     
     cout << "Duvarla çarpışmadan önce : ";
-    printSnapshot(current_time);
+    printSnapshot();
 
     if(wall == 0){
         balls[index].vy = -balls[index].vy;
@@ -424,7 +493,7 @@ void Program::collideWithWall(int index, float wall, float time){
     }
 
     cout << "Duvarla çarpışmadan sonra : ";
-    printSnapshot(current_time);
+    printSnapshot();
     
 }
 
