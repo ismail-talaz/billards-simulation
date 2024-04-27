@@ -18,6 +18,7 @@ struct Ball{
 struct Table{
     float width;
     float height;
+    float fr;
 };
 
 
@@ -25,8 +26,7 @@ class Program{
 
     public:
 
-        unordered_set<int> lastColliders;
-        float fr=0.0; // deacceleration rate.    
+        unordered_set<int> lastColliders;// deacceleration rate.    
         float current_time=0;
         int numberofballs=0;
         float radius=1.0;
@@ -87,6 +87,7 @@ class Program{
 };
 
 float Program::calculateTimeToCollide(Ball b1, Ball b2){
+    float fr = table.fr;
     float alphax,alphay,betax,betay;
     float a,b,c;
     float theta1, theta2;
