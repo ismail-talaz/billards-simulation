@@ -57,10 +57,6 @@ class Program{
             for(int i=0;i<4;i++){collidingTimesWithWall[i].resize(numberofballs,-FMAX);}
         }
 
-        float calculateAlphaX(Ball b1, Ball b2);
-        float calculateAlphaY(Ball b1, Ball b2);
-        float calculateBetaX(Ball b1, Ball b2);
-        float calculateBetaY(Ball b1, Ball b2);
         float calculateTimeToCollide(Ball b1, Ball b2);
         float calculateTimeToCollideWithoutFR(Ball b1, Ball b2);
         float calculateFirstTwoBalls(){
@@ -90,35 +86,6 @@ class Program{
         }
 };
 
-
-float Program::calculateAlphaX(Ball b1, Ball b2){
-
-    float res=0;
-
-    res += b1.x - b2.x;
-    res += (b1.vx - b2.vx)/fr;
-
-    return res;
-}
-
-float Program::calculateAlphaY(Ball b1, Ball b2){
-
-    float res=0;
-
-    res += b1.y - b2.y;
-    res += (b1.vy - b2.vy)/fr;
-
-    return res;
-}
-
-float Program::calculateBetaX(Ball b1, Ball b2){
-    return (b2.vx - b1.vx)/fr;
-}
-
-float Program::calculateBetaY(Ball b1, Ball b2){
-    return (b2.vy - b1.vy)/fr;
-}
-
 float Program::calculateTimeToCollide(Ball b1, Ball b2){
     float alphax,alphay,betax,betay;
     float a,b,c;
@@ -126,11 +93,10 @@ float Program::calculateTimeToCollide(Ball b1, Ball b2){
     float t1,t2,t;
 
     if(fr != 0.0){
-        alphax = calculateAlphaX(b1,b2);
-        betax = calculateBetaX(b1,b2);
-
-        alphay = calculateAlphaY(b1,b2);
-        betay = calculateBetaY(b1,b2);
+        alphax = b1.x - b2.x + (b1.vx-b2.vx)/fr;
+        betax = (b2.vx - b1.vx)/fr;
+        alphay = b1.y - b2.y + (b1.vy-b2.vy)/fr;
+        betay = (b2.vy - b1.vy)/fr;
 
         a = betax*betax+betay*betay;
         b = 2*alphax*betax+2*alphay*betay;
