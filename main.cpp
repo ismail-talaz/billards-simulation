@@ -4,7 +4,7 @@
 
 int main(){
 
-    Ball b1;
+    /*Ball b1;
     Ball b2;
     Ball b3,b4,b5,b6,b7,b8,b9,b10,b11,b12;
 
@@ -80,6 +80,9 @@ int main(){
 
     Program program = Program(balls,times);
 
+    program.startSimulation();*/
+
+    Program program = Program();
     program.startSimulation();
 
     return 0;
