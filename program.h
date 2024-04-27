@@ -26,7 +26,7 @@ class Program{
     public:
 
         unordered_set<int> lastColliders;
-        float fr=0.1; // deacceleration rate.    
+        float fr=0.0; // deacceleration rate.    
         float current_time=0;
         int numberofballs=0;
         float radius=1.0;
@@ -120,41 +120,75 @@ float Program::calculateBetaY(Ball b1, Ball b2){
 }
 
 float Program::calculateTimeToCollide(Ball b1, Ball b2){
-    float alphax = calculateAlphaX(b1,b2);
-    float betax = calculateBetaX(b1,b2);
+    float alphax,alphay,betax,betay;
+    float a,b,c;
+    float theta1, theta2;
+    float t1,t2,t;
 
-    float alphay = calculateAlphaY(b1,b2);
-    float betay = calculateBetaY(b1,b2);
+    if(fr != 0.0){
+        alphax = calculateAlphaX(b1,b2);
+        betax = calculateBetaX(b1,b2);
 
-    float a = betax*betax+betay*betay;
-    float b = 2*alphax*betax+2*alphay*betay;
-    float c = alphax*alphax+alphay*alphay-4*radius*radius; // a,b,c değerleri hazır
+        alphay = calculateAlphaY(b1,b2);
+        betay = calculateBetaY(b1,b2);
+
+        a = betax*betax+betay*betay;
+        b = 2*alphax*betax+2*alphay*betay;
+        c = alphax*alphax+alphay*alphay-4*radius*radius; // a,b,c değerleri hazır
 
 
-    if(a==0){ // betax = 0 betay = 0 means that her iki düzlemde hızları eşit. eğer şu an çakışmıyorlarsa hiç çakışmayacaklar.
-        float theta = (-c)/b;
-        float t = (-1*log(abs(theta)))/fr;
-        return t;
+        if(a==0){ // betax = 0 betay = 0 means that her iki düzlemde hızları eşit. eğer şu an çakışmıyorlarsa hiç çakışmayacaklar.
+            float theta = (-c)/b;
+            t = (-1*log(abs(theta)))/fr;
+            return t;
+        }
+
+
+        if ((b*b-4*a*c) < 0){ // they're parallel
+            return FMAX;
+        }
+
+
+        theta1 = (-b+sqrt(b*b-4*a*c))/(2*a);
+        theta2 = (-b-sqrt(b*b-4*a*c))/(2*a);
+
+        t1 = (-1*log(abs(theta1)))/fr+0.0;  // need to checked these values.
+        t2 = (-1*log(abs(theta2)))/fr+0.0;  //
+
+        if (t1 == t2){ // they will cross each other -> no collision. tangent
+            return FMAX;
+        }
+
+        t = min(t1,t2)>=0?min(t1,t2):max(t1,t2)>=0?max(t1,t2):FMAX;
     }
+    else{
+        alphax = b2.vx - b1.vx;
+        alphay = b2.vy - b1.vy;
+        betax = b2.x - b1.x;
+        betay = b2.y - b1.y;
 
+        a = alphax*alphax + alphay*alphay;
+        b = 2*alphax*betax + 2*alphay*betay;
+        c = betax*betax + betay*betay - 4*radius*radius;
 
-    if ((b*b-4*a*c) < 0){ // they're parallel
-        return FMAX;
-    }
+        if (a == 0){
+            t = -c/b;
+            return t;
+        }
 
+        if ((b*b-4*a*c) < 0){ // they're parallel
+            return FMAX;
+        }
 
-    float theta1 = (-b+sqrt(b*b-4*a*c))/(2*a);
-    float theta2 = (-b-sqrt(b*b-4*a*c))/(2*a);
+        t1 = (-b+sqrt(b*b-4*a*c))/(2*a);
+        t2 = (-b-sqrt(b*b-4*a*c))/(2*a);
 
-    float t1 = (-1*log(abs(theta1)))/fr+0.0;  // need to checked these values.
-    float t2 = (-1*log(abs(theta2)))/fr+0.0;  //
+        if (t1 == t2){ // they will cross each other -> no collision. tangent
+            return FMAX;
+        }
 
-    if (t1 == t2){ // they will cross each other -> no collision. tangent
-        return FMAX;
-    }
-
-    float t = min(t1,t2)>=0?min(t1,t2):max(t1,t2)>=0?max(t1,t2):FMAX;
-
+        t = min(t1,t2)>=0?min(t1,t2):max(t1,t2)>=0?max(t1,t2):FMAX;
+    }    
     return t;
 }
 
@@ -224,11 +258,13 @@ void Program::timeSkip(float time){
     
     if (time+0.0 < THRESHOLD) return;
 
-    for(int i=0; i<numberofballs;i++){
-        balls[i].x = balls[i].x + balls[i].vx*(1-exp(-fr*time))/fr;
-        balls[i].y = balls[i].y + balls[i].vy*(1-exp(-fr*time))/fr;
-        balls[i].vx = balls[i].vx/exp(fr*time);
-        balls[i].vy = balls[i].vy/exp(fr*time);
+    if(fr != 0.0){ // if there is deacceleration, update velocities.
+        for(int i=0; i<numberofballs;i++){
+            balls[i].x = balls[i].x + balls[i].vx*(1-exp(-fr*time))/fr;
+            balls[i].y = balls[i].y + balls[i].vy*(1-exp(-fr*time))/fr;
+            balls[i].vx = balls[i].vx/exp(fr*time);
+            balls[i].vy = balls[i].vy/exp(fr*time);
+        }
     }
 
     current_time += time;
@@ -366,18 +402,35 @@ vector<float> Program::calculateWallCollide(Ball b){
 }
 
 float Program::calculateTimeToCollideWall(Ball b1, float wall){
-    if(wall == 0){
-        return -log(-fr*(table.height-radius-b1.y-b1.vy/fr)/b1.vy)/fr;
+    if(fr != 0){
+        if(wall == 0){
+            return -log(-fr*(table.height-radius-b1.y-b1.vy/fr)/b1.vy)/fr;
+        }
+        else if(wall == 1){
+            return -log(-fr*(table.width-radius-b1.x-b1.vx/fr)/b1.vx)/fr;
+        }
+        else if(wall == 2){
+            return -log(-fr*(radius-b1.y-b1.vy/fr)/b1.vy)/fr;
+        }
+        else {
+            return -log(-fr*(radius-b1.x-b1.vx/fr)/b1.vx)/fr;
+        }
     }
-    else if(wall == 1){
-        return -log(-fr*(table.width-radius-b1.x-b1.vx/fr)/b1.vx)/fr;
+    else{
+        if(wall == 0){
+            return (table.height-radius-b1.y)/b1.vy;
+        }
+        else if(wall == 1){
+            return (table.width-radius-b1.x)/b1.vx;
+        }
+        else if(wall == 2){
+            return (radius-b1.y)/b1.vy;
+        }
+        else {
+            return (radius-b1.x)/b1.x;
+        }
     }
-    else if(wall == 2){
-        return -log(-fr*(radius-b1.y-b1.vy/fr)/b1.vy)/fr;
-    }
-    else {
-        return -log(-fr*(radius-b1.x-b1.vx/fr)/b1.vx)/fr;
-    }
+    
 }
 
 void Program::collideWithWall(int index, float wall, float time){
