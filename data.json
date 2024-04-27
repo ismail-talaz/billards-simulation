@@ -1,0 +1,35 @@
+{
+    "table": {
+        "width": 100,
+        "height": 100,
+        "deacceleration": 0.1
+    },
+
+    "ball": {
+        "radius": 5
+    },
+    
+    "balls": [
+        {
+            "position": {
+            "x": 10,
+            "y": 10
+            },
+            "velocity": {
+            "x": 1,
+            "y": 1
+            }
+        },
+        {
+            "position": {
+            "x": 20,
+            "y": 20
+            },
+
+            "velocity": {
+            "x": -1,
+            "y": -1
+            }
+        }
+        ]
+    }

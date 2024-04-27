@@ -149,6 +149,10 @@ float Program::calculateTimeToCollide(Ball b1, Ball b2){
     float t1 = (-1*log(abs(theta1)))/fr+0.0;  // need to checked these values.
     float t2 = (-1*log(abs(theta2)))/fr+0.0;  //
 
+    if (t1 == t2){ // they will cross each other -> no collision. tangent
+        return FMAX;
+    }
+
     float t = min(t1,t2)>=0?min(t1,t2):max(t1,t2)>=0?max(t1,t2):FMAX;
 
     return t;
@@ -318,6 +322,10 @@ float Program::calculateVelocity(Ball b1){
 }
 
 float Program::calculateTheta(Ball b1){ // MOVEMENT ANGLE THETA
+
+    return atan2(b1.vy, b1.vx);
+
+    /*
     float v = calculateVelocity(b1);
 
     if(v==0){
@@ -329,7 +337,7 @@ float Program::calculateTheta(Ball b1){ // MOVEMENT ANGLE THETA
     }
     if(b1.vy != 0){
         return asin(b1.vy/v);
-    }
+    }*/
 }
 
 
@@ -337,10 +345,10 @@ vector<float> Program::calculateWallCollide(Ball b){
     float wall;
     float time = FMAX;
     
-    float top = b.vy!=0?calculateTimeToCollideWall(b,0):FMAX;
-    float right = b.vx!=0?calculateTimeToCollideWall(b,1):FMAX;
-    float bottom = b.vy!=0?calculateTimeToCollideWall(b,2):FMAX;
-    float left = b.vx!=0?calculateTimeToCollideWall(b,3):FMAX;
+    float top = (b.vy > 0)?calculateTimeToCollideWall(b,0):FMAX;
+    float right = (b.vx > 0)?calculateTimeToCollideWall(b,1):FMAX;
+    float bottom = (b.vy < 0)?calculateTimeToCollideWall(b,2):FMAX;
+    float left = (b.vx < 0)?calculateTimeToCollideWall(b,3):FMAX;
 
     //cout << top <<" " <<right <<" "<< bottom <<" " <<left<<"\n";
 
@@ -379,8 +387,8 @@ void Program::collideWithWall(int index, float wall, float time){
 
     collidingTimesWithWall[wall][index] = current_time;
     
-    /*cout << "Duvarla çarpışmadan önce : ";
-    printSnapshot(current_time);*/
+    cout << "Duvarla çarpışmadan önce : ";
+    printSnapshot(current_time);
 
     if(wall == 0){
         balls[index].vy = -balls[index].vy;
@@ -395,8 +403,8 @@ void Program::collideWithWall(int index, float wall, float time){
         balls[index].vx = -balls[index].vx;
     }
 
-    /*cout << "Duvarla çarpışmadan sonra : ";
-    printSnapshot(current_time);*/
+    cout << "Duvarla çarpışmadan sonra : ";
+    printSnapshot(current_time);
     
 }
 
