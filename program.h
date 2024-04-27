@@ -319,10 +319,10 @@ void Program::collide(int index1, int index2, float time){ //
     float v2fx = v1*cos(theta1-phi)*cos(phi)+v2*sin(theta2-phi)*cos(phi+M_PI/2);
     float v2fy = v1*cos(theta1-phi)*sin(phi)+v2*sin(theta2-phi)*sin(phi+M_PI/2);
 
-    balls[index1].vx = abs(v2fx)>THRESHOLD?v2fx:0;
-    balls[index1].vy = abs(v2fy)>THRESHOLD?v2fy:0;
-    balls[index2].vx = abs(v1fx)>THRESHOLD?v1fx:0;
-    balls[index2].vy = abs(v1fy)>THRESHOLD?v1fy:0;
+    balls[index1].vx = abs(v2fx-balls[index1].vx)>THRESHOLD?v2fx:balls[index1].vx;
+    balls[index1].vy = abs(v2fy-balls[index1].vy)>THRESHOLD?v2fy:balls[index1].vy;
+    balls[index2].vx = abs(v1fx-balls[index2].vx)>THRESHOLD?v1fx:balls[index2].vx;
+    balls[index2].vy = abs(v1fy-balls[index2].vy)>THRESHOLD?v1fy:balls[index2].vy;
 
     cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpıştıktan sonra: ";
     printSnapshot();
