@@ -9,15 +9,15 @@ int main(){
     Ball b3,b4,b5,b6,b7,b8,b9,b10,b11,b12;
 
 
-    b1.x = 1;
+    b1.x = 9;
     b1.y = 1;
     b1.vy= 2;
-    b1.vx = 2;
+    b1.vx = -2;
 
-    b2.x = 9;
+    b2.x = 1;
     b2.y = 9;
     b2.vy = -2;
-    b2.vx =-2;
+    b2.vx = 2;
 
     b3.x = 3;
     b3.y = 4.8284271;
@@ -74,8 +74,8 @@ int main(){
     b12.vy = 2;
 
 
-    vector<Ball> balls = {b1,b2};
-    vector<float> times = {200,5,3,2,1};
+    vector<Ball> balls = {b10,b11,b12};
+    vector<float> times = {50,5,3,2,1};
 
 
     Program program = Program(balls,times);
