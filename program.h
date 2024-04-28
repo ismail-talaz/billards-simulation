@@ -8,40 +8,39 @@
 
 const double THRESHOLD = 0.00001;
 #define FMAX 340282346638528859811704183484516925440.0000000000000000
-#define float double
 
 using json = nlohmann::json;
 using namespace std;
 
 struct Ball{
-    float x;
-    float y;
-    float vx;
-    float vy;
+    double x;
+    double y;
+    double vx;
+    double vy;
 };
 
 struct Table{
-    float width;
-    float height;
-    float fr;
+    double width;
+    double height;
+    double fr;
 };
 
 class Program{
 
     public:
         bool testmode = false;
-        float current_time=0;
+        double current_time=0;
         int numberofballs=0;
-        float radius;
-        vector<vector<float>> collisionBtwnBallsTimes;
-        vector<vector<float>> collisionWithWallTimes = vector<vector<float>>(4,vector<float>());
+        double radius;
+        vector<vector<double>> collisionBtwnBallsTimes;
+        vector<vector<double>> collisionWithWallTimes = vector<vector<double>>(4,vector<double>());
         Table table;
         vector<Ball> balls;
-        queue<float> times;
+        queue<double> times;
         json out;
 
         vector<vector<int>> stackofcolliders;  // ! şuna bir ayar çekilebilir mi acaba?
-        float min_time_to_collide=FMAX;
+        double min_time_to_collide=FMAX;
 
         Program(bool test = false){
             ifstream f("initial-state.json");
@@ -65,7 +64,7 @@ class Program{
                 balls.push_back(temp);
             }
 
-            collisionBtwnBallsTimes.resize(numberofballs,vector<float>());
+            collisionBtwnBallsTimes.resize(numberofballs,vector<double>());
             for(int i=0;i<numberofballs;i++){collisionBtwnBallsTimes[i].resize(numberofballs,-FMAX);}
             for(int i=0;i<4;i++){collisionWithWallTimes[i].resize(numberofballs,-FMAX);}
 
@@ -74,7 +73,7 @@ class Program{
             string line;
             try{
                 while(getline(t,line)){
-                    float time = stoi(line);
+                    double time = stoi(line);
                     times.push(time);
                 }
             }catch(exception& e){
@@ -83,36 +82,18 @@ class Program{
 
             out["positions"] = vector<vector<json>>();
         }
-
-        Program(vector<Ball> input,vector<float> input_times){
-            for(auto Ball : input){
-                numberofballs++;
-                balls.push_back(Ball);
-            }
-
-            for(auto time : input_times){
-                times.push(time);
-            }
-
-            table.width=10;
-            table.height=10;
-
-            collisionBtwnBallsTimes.resize(numberofballs,vector<float>());
-            for(int i=0;i<numberofballs;i++){collisionBtwnBallsTimes[i].resize(numberofballs,-FMAX);}
-            for(int i=0;i<4;i++){collisionWithWallTimes[i].resize(numberofballs,-FMAX);}
-        }
-
-        float calculateTimeToCollide(int i, int j);
+        
+        double calculateTimeToCollide(int i, int j);
         void findClosestCollision();
-        void timeSkip(float time); // skips time until closest collision
-        void collide(int index1, int index2, float time);
+        void timeSkip(double time); // skips time until closest collision
+        void collide(int index1, int index2, double time);
         void startSimulation();
 
         void printSnapshot();
         void exportSnapshot();
-        void collideWithWall(int index, float wall,float time);
-        float calculateTimeToCollideWall(int i, float wall);
-        vector<float> calculateWallCollide(int i);
+        void collideWithWall(int index, double wall,double time);
+        double calculateTimeToCollideWall(int i, double wall);
+        vector<double> calculateWallCollide(int i);
 
         void printStack(){
             cout << "--------------------------\n";
@@ -126,12 +107,12 @@ class Program{
         }
 };
 
-float Program::calculateTimeToCollide(int i, int j){
-    float fr = table.fr;
-    float alphax,alphay,betax,betay;
-    float a,b,c;
-    float theta1, theta2;
-    float t1,t2,t;
+double Program::calculateTimeToCollide(int i, int j){
+    double fr = table.fr;
+    double alphax,alphay,betax,betay;
+    double a,b,c;
+    double theta1, theta2;
+    double t1,t2,t;
 
     if(fr != 0.0){
         alphax = balls[i].x - balls[j].x + (balls[i].vx-balls[j].vx)/fr;
@@ -149,7 +130,7 @@ float Program::calculateTimeToCollide(int i, int j){
                 return FMAX;
             }
             else{
-                float theta = (-c)/b;
+                double theta = (-c)/b;
                 t = (-1*log(abs(theta)))/fr;
                 return t;
             }
@@ -226,13 +207,13 @@ float Program::calculateTimeToCollide(int i, int j){
 
 void Program::findClosestCollision(){ 
     vector<int> colliders;
-    float time;
+    double time;
 
     min_time_to_collide = times.front()-current_time;
 
     for(int i=0; i<numberofballs;i++){
 
-        vector<float> information = calculateWallCollide(i);
+        vector<double> information = calculateWallCollide(i);
         
         time = information[0];
         int wall = information[1];
@@ -284,8 +265,8 @@ void Program::findClosestCollision(){
 }
 
 
-void Program::timeSkip(float time){
-    float fr = table.fr;
+void Program::timeSkip(double time){
+    double fr = table.fr;
     
     if (time+0.0 < THRESHOLD) return;
 
@@ -312,7 +293,7 @@ void Program::timeSkip(float time){
     }
 }
 
-void Program::collide(int index1, int index2, float time){ //
+void Program::collide(int index1, int index2, double time){ //
 
     //timeSkip(time);
 
@@ -333,14 +314,14 @@ void Program::collide(int index1, int index2, float time){ //
     double theta2 = atan2(b2.vy, b2.vx);
     double phi = M_PI-atan( (b2.x-b1.x) / (b2.y-b1.y) );
 
-    float v1 = sqrt(b1.vx*b1.vx+b1.vy*b1.vy); // ? magnitude of velocities
-    float v2 = sqrt(b2.vx*b2.vx+b2.vy*b2.vy); 
+    double v1 = sqrt(b1.vx*b1.vx+b1.vy*b1.vy); // ? magnitude of velocities
+    double v2 = sqrt(b2.vx*b2.vx+b2.vy*b2.vy); 
 
-    float v1fx = v2*cos(theta2-phi)*cos(phi)+v1*sin(theta1-phi)*cos(phi+M_PI/2);
-    float v1fy = v2*cos(theta2-phi)*sin(phi)+v1*sin(theta1-phi)*sin(phi+M_PI/2);
+    double v1fx = v2*cos(theta2-phi)*cos(phi)+v1*sin(theta1-phi)*cos(phi+M_PI/2);
+    double v1fy = v2*cos(theta2-phi)*sin(phi)+v1*sin(theta1-phi)*sin(phi+M_PI/2);
 
-    float v2fx = v1*cos(theta1-phi)*cos(phi)+v2*sin(theta2-phi)*cos(phi+M_PI/2);
-    float v2fy = v1*cos(theta1-phi)*sin(phi)+v2*sin(theta2-phi)*sin(phi+M_PI/2);
+    double v2fx = v1*cos(theta1-phi)*cos(phi)+v2*sin(theta2-phi)*cos(phi+M_PI/2);
+    double v2fy = v1*cos(theta1-phi)*sin(phi)+v2*sin(theta2-phi)*sin(phi+M_PI/2);
 
     balls[index1].vx = abs(v2fx-balls[index1].vx)>THRESHOLD?v2fx:balls[index1].vx;
     balls[index1].vy = abs(v2fy-balls[index1].vy)>THRESHOLD?v2fy:balls[index1].vy;
@@ -370,11 +351,11 @@ void Program::startSimulation(){
             while(stackofcolliders.empty() == false){
                 vector<int> colliders = stackofcolliders[stackofcolliders.size()-1];
                 if (colliders[1] < 1000){
-                    //float min_time = calculateTimeToCollide(balls[colliders[0]],balls[colliders[1]]);
+                    //double min_time = calculateTimeToCollide(balls[colliders[0]],balls[colliders[1]]);
                     collide(colliders[0],colliders[1], min_time_to_collide);
                 }
                 else{ // duvarla çarpışma
-                    //float min_time = calculateTimeToCollideWall(balls[colliders[0]],colliders[1]-1000);
+                    //double min_time = calculateTimeToCollideWall(balls[colliders[0]],colliders[1]-1000);
                     collideWithWall(colliders[0],colliders[1]-1000,min_time_to_collide);
                 }
                 stackofcolliders.pop_back();
@@ -410,14 +391,14 @@ void Program::exportSnapshot(){
     out["positions"].push_back(datas);
 }
 
-vector<float> Program::calculateWallCollide(int i){ 
-    float wall=-1; // * KEY
-    float time = FMAX;
+vector<double> Program::calculateWallCollide(int i){ 
+    double wall=-1; // * KEY
+    double time = FMAX;
     
-    float top = (balls[i].vy > 0)?calculateTimeToCollideWall(i,0):FMAX;
-    float right = (balls[i].vx > 0)?calculateTimeToCollideWall(i,1):FMAX;
-    float bottom = (balls[i].vy < 0)?calculateTimeToCollideWall(i,2):FMAX;
-    float left = (balls[i].vx < 0)?calculateTimeToCollideWall(i,3):FMAX;
+    double top = (balls[i].vy > 0)?calculateTimeToCollideWall(i,0):FMAX;
+    double right = (balls[i].vx > 0)?calculateTimeToCollideWall(i,1):FMAX;
+    double bottom = (balls[i].vy < 0)?calculateTimeToCollideWall(i,2):FMAX;
+    double left = (balls[i].vx < 0)?calculateTimeToCollideWall(i,3):FMAX;
 
     //cout << top <<" " <<right <<" "<< bottom <<" " <<left<<"\n";
 
@@ -426,7 +407,7 @@ vector<float> Program::calculateWallCollide(int i){
     if(time > bottom && (bottom+0.0) >=0 ) {time = bottom;wall = 2;} 
     if(time > left && (left+0.0) >=0) {time = left;wall = 3;}
 
-    vector<float> info;
+    vector<double> info;
     info.push_back(time);
     info.push_back(wall);
 
@@ -434,10 +415,10 @@ vector<float> Program::calculateWallCollide(int i){
 
 }
 
-float Program::calculateTimeToCollideWall(int i, float wall){ 
-    float value;
+double Program::calculateTimeToCollideWall(int i, double wall){ 
+    double value;
     Ball b1 = balls[i];
-    float fr = table.fr;
+    double fr = table.fr;
     if(fr != 0){
         if(wall == 0){
             value = -fr*(table.height-radius-b1.y-b1.vy/fr)/b1.vy;
@@ -473,7 +454,7 @@ float Program::calculateTimeToCollideWall(int i, float wall){
     
 }
 
-void Program::collideWithWall(int index, float wall, float time){
+void Program::collideWithWall(int index, double wall, double time){
 
 
     //timeSkip(time);
