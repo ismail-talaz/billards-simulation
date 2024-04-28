@@ -8,6 +8,7 @@
 
 const double THRESHOLD = 0.00001;
 #define FMAX 340282346638528859811704183484516925440.0000000000000000
+#define float double
 
 using json = nlohmann::json;
 using namespace std;
@@ -25,10 +26,10 @@ struct Table{
     float fr;
 };
 
-// ! double geçilebilir mi?
 class Program{
 
     public:
+        bool testmode = false;
         float current_time=0;
         int numberofballs=0;
         float radius;
@@ -42,9 +43,11 @@ class Program{
         vector<vector<int>> stackofcolliders;  // ! şuna bir ayar çekilebilir mi acaba?
         float min_time_to_collide=FMAX;
 
-        Program(){
+        Program(bool test = false){
             ifstream f("initial-state.json");
             json inp = json::parse(f);
+
+            testmode = test;
 
             table.fr = inp["table"]["deacceleration"];
             table.height = inp["table"]["height"];
@@ -304,7 +307,7 @@ void Program::timeSkip(float time){
     current_time += time;
     if(current_time == times.front()){
         times.pop();
-        printSnapshot();
+        if(testmode) printSnapshot();
         exportSnapshot();
     }
 }
@@ -316,8 +319,10 @@ void Program::collide(int index1, int index2, float time){ //
     Ball b1 = balls[index1];
     Ball b2 = balls[index2];
     
-    cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpışmadan önce : ";
-    printSnapshot();
+    if(testmode){
+        cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpışmadan önce : ";
+        printSnapshot();
+    }
 
     collisionBtwnBallsTimes[index1][index2] = current_time;
     collisionBtwnBallsTimes[index2][index1] = current_time;
@@ -342,8 +347,10 @@ void Program::collide(int index1, int index2, float time){ //
     balls[index2].vx = abs(v1fx-balls[index2].vx)>THRESHOLD?v1fx:balls[index2].vx;
     balls[index2].vy = abs(v1fy-balls[index2].vy)>THRESHOLD?v1fy:balls[index2].vy;
 
-    cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpıştıktan sonra: ";
-    printSnapshot();
+    if(testmode){
+        cout << "Ball"<<index1<<" ve "<<"Ball"<<index2<<"çarpıştıktan sonra: ";
+        printSnapshot();
+    }
 
 }
 
@@ -352,7 +359,8 @@ void Program::startSimulation(){
 
     while(!times.empty()){
         findClosestCollision();
-        printStack();
+        
+        if(testmode)printStack();
 
         if(stackofcolliders.empty()){
             timeSkip(times.front()-current_time);
@@ -472,8 +480,10 @@ void Program::collideWithWall(int index, float wall, float time){
 
     collisionWithWallTimes[wall][index] = current_time;
     
-    cout << "Duvarla çarpışmadan önce : ";
-    printSnapshot();
+    if(testmode){
+        cout << "Duvarla çarpışmadan önce : ";
+        printSnapshot();
+    }
 
     if(wall == 0){
         balls[index].vy = -balls[index].vy;
@@ -488,8 +498,10 @@ void Program::collideWithWall(int index, float wall, float time){
         balls[index].vx = -balls[index].vx;
     }
 
-    cout << "Duvarla çarpışmadan sonra : ";
-    printSnapshot();
+    if(testmode){
+        cout << "Duvarla çarpışmadan sonra : ";
+        printSnapshot();
+    }
     
 }
 

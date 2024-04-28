@@ -81,8 +81,8 @@ int main(){
     Program program = Program(balls,times);
 
     program.startSimulation();*/
-
-    Program program = Program();
+    bool testmode = false;
+    Program program = Program(testmode);
     program.startSimulation();
 
     return 0;
