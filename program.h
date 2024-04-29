@@ -6,7 +6,7 @@
 #include <queue>
 #include <stack>
 
-const double THRESHOLD = 0.00001;
+const double THRESHOLD = 0.000001;
 #define FMAX 340282346638528859811704183484516925440.0000000000000000
 
 using json = nlohmann::json;
@@ -32,8 +32,7 @@ class Program{
         double current_time=0;
         int numberofballs=0;
         double radius;
-        vector<vector<double>> collisionBtwnBallsTimes;
-        vector<vector<double>> collisionWithWallTimes = vector<vector<double>>(4,vector<double>());
+        unordered_map<int,pair<int,double>> logs;
         Table table;
         vector<Ball> balls;
         queue<double> times;
@@ -64,9 +63,8 @@ class Program{
                 balls.push_back(temp);
             }
 
-            collisionBtwnBallsTimes.resize(numberofballs,vector<double>());
-            for(int i=0;i<numberofballs;i++){collisionBtwnBallsTimes[i].resize(numberofballs,-FMAX);}
-            for(int i=0;i<4;i++){collisionWithWallTimes[i].resize(numberofballs,-FMAX);}
+            for(int i=0;i<numberofballs;i++){logs[i]={-1,-1.0};}
+            for(int i=0;i<4;i++){logs[i+1000]={-1,-1.0};}
 
             ifstream t("snapshot-times.txt");
 
@@ -90,7 +88,7 @@ class Program{
         void startSimulation();
 
         void printSnapshot();
-        void exportSnapshot();
+        void takeSnapshot();
         void collideWithWall(int index, double wall,double time);
         double calculateTimeToCollideWall(int i, double wall);
         vector<double> findClosestWallCollision(int i);
@@ -220,26 +218,26 @@ void Program::findClosestCollision(){
 
 
 
-        if(wall != -1 && (collisionWithWallTimes[wall][i] != current_time)){
+        if(wall != -1 && !(logs[wall+1000].first == i && logs[wall+1000].second == current_time)){
             if(time < min_time_to_collide){
                 min_time_to_collide = time;
                 colliders.clear();
                 colliders.push_back(i);
-                colliders.push_back(information[1]+1000);
+                colliders.push_back(wall+1000);
                 stackofcolliders.clear();
                 stackofcolliders.push_back(colliders);
             }
             else if(time == min_time_to_collide){
                 colliders.clear();
                 colliders.push_back(i);
-                colliders.push_back(information[1]+1000);
+                colliders.push_back(wall+1000);
                 stackofcolliders.push_back(colliders);
             }
         }
 
         for(int j=i+1;j<numberofballs && j>i;j++){
 
-            if(collisionBtwnBallsTimes[i][j] == current_time){ // ? if they've already collided, then continue.
+            if(logs[i].first == j && logs[i].second == current_time){ // ? if they've already collided, then continue.
                 continue;
             }
 
@@ -289,7 +287,7 @@ void Program::timeSkip(double time){
     if(current_time == times.front()){
         times.pop();
         if(testmode) printSnapshot();
-        exportSnapshot();
+        takeSnapshot();
     }
 }
 
@@ -305,9 +303,8 @@ void Program::collide(int index1, int index2, double time){ //
         printSnapshot();
     }
 
-    collisionBtwnBallsTimes[index1][index2] = current_time;
-    collisionBtwnBallsTimes[index2][index1] = current_time;
-
+    logs[index1] = {index2, current_time};
+    logs[index2] = {index1, current_time};
 
 
     double theta1 = atan2(b1.vy, b1.vx);
@@ -369,14 +366,14 @@ void Program::printSnapshot(){
     cout << "---------------"<< "\n";
     cout << "Time: "<< current_time << "\n";
     for(int b=0;b<balls.size();b++){
-        std::cout << "  Ball" << b << " x: " << std::fixed << std::setprecision(2) << balls[b].x
+        std::cout << "  Ball" << b << " x: " << std::fixed << std::setprecision(6) << balls[b].x
                       << " y: " << std::fixed << std::setprecision(6) << balls[b].y
                       << " vx: " << std::fixed << std::setprecision(6) << balls[b].vx
                       << " vy: " << std::fixed << std::setprecision(6) << balls[b].vy << "\n";
     }
 }
 
-void Program::exportSnapshot(){
+void Program::takeSnapshot(){
     vector<json> datas;
 
     for(int i=0;i<numberofballs;i++){
@@ -452,7 +449,8 @@ double Program::calculateTimeToCollideWall(int i, double wall){
 
 void Program::collideWithWall(int index, double wall, double time){
 
-    collisionWithWallTimes[wall][index] = current_time;
+    logs[wall+1000].first = index;
+    logs[wall+1000].second = current_time;
     
     if(testmode){
         cout << "Duvarla çarpışmadan önce : ";
