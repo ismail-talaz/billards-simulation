@@ -4,7 +4,7 @@
 
 int main(){
 
-    bool testmode = false;
+    bool testmode = true;
     Program program = Program(testmode);
     program.startSimulation();
 

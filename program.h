@@ -85,7 +85,7 @@ class Program{
         
         double calculateTimeToCollide(int i, int j);
         void findClosestCollision();
-        void timeSkip(double time); // skips time until closest collision
+        void timeSkip(double time); 
         void collide(int index1, int index2, double time);
         void startSimulation();
 
@@ -93,7 +93,7 @@ class Program{
         void exportSnapshot();
         void collideWithWall(int index, double wall,double time);
         double calculateTimeToCollideWall(int i, double wall);
-        vector<double> calculateWallCollide(int i);
+        vector<double> findClosestWallCollision(int i);
 
         void printStack(){
             cout << "--------------------------\n";
@@ -213,7 +213,7 @@ void Program::findClosestCollision(){
 
     for(int i=0; i<numberofballs;i++){
 
-        vector<double> information = calculateWallCollide(i);
+        vector<double> information = findClosestWallCollision(i);
         
         time = information[0];
         int wall = information[1];
@@ -389,7 +389,7 @@ void Program::exportSnapshot(){
     out["positions"].push_back(datas);
 }
 
-vector<double> Program::calculateWallCollide(int i){ 
+vector<double> Program::findClosestWallCollision(int i){ 
     double wall=-1; // * KEY
     double time = FMAX;
     
