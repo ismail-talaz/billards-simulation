@@ -39,7 +39,7 @@ class Program{
         queue<double> times;
         json out;
 
-        vector<vector<int>> stackofcolliders;  // ! şuna bir ayar çekilebilir mi acaba?
+        vector<vector<int>> stackofcolliders;  
         double min_time_to_collide=FMAX;
 
         Program(bool test = false){
@@ -122,14 +122,14 @@ double Program::calculateTimeToCollide(int i, int j){
 
         a = betax*betax+betay*betay;
         b = 2*alphax*betax+2*alphay*betay;
-        c = alphax*alphax+alphay*alphay-4*radius*radius; // a,b,c değerleri hazır
+        c = alphax*alphax+alphay*alphay-4*radius*radius; 
 
 
-        if(a==0){ // betax = 0 betay = 0 means that her iki düzlemde hızları eşit. eğer şu an çakışmıyorlarsa hiç çakışmayacaklar.
+        if(a==0){ 
             if(b==0){
                 return FMAX;
             }
-            else{
+            else{ // ? This is probably unnecessary, it can be removed.
                 double theta = (-c)/b;
                 t = (-1*log(abs(theta)))/fr;
                 return t;
@@ -138,7 +138,7 @@ double Program::calculateTimeToCollide(int i, int j){
         }
 
 
-        if ((b*b-4*a*c) < 0){ // they're parallel
+        if ((b*b-4*a*c) < 0){ // ? no real solution
             return FMAX;
         }
 
@@ -146,10 +146,10 @@ double Program::calculateTimeToCollide(int i, int j){
         theta1 = (-b+sqrt(b*b-4*a*c))/(2*a);
         theta2 = (-b-sqrt(b*b-4*a*c))/(2*a);
 
-        t1 = theta1>0?(-1*log(theta1))/fr+0.0:FMAX;  // need to checked these values.
-        t2 = theta2>0?(-1*log(theta2))/fr+0.0:FMAX;  //
+        t1 = theta1>0?(-1*log(theta1))/fr+0.0:FMAX; 
+        t2 = theta2>0?(-1*log(theta2))/fr+0.0:FMAX; 
 
-        if (t1 == t2){ // they will cross each other -> no collision. tangent
+        if (t1 == t2){ // ! they will cross each other -> no collision. tangent
             return FMAX;
         }
 
@@ -172,9 +172,9 @@ double Program::calculateTimeToCollide(int i, int j){
 
         if (a == 0){
             if(b==0){
-                return FMAX; // ? NO COLLISION, BOTH ARE NOT MOVING
+                return FMAX;
             }
-            else{
+            else{  // ? This is probably unnecessary, it can be removed.
                 t = -c/b;
                 return t;
             }
@@ -351,11 +351,9 @@ void Program::startSimulation(){
             while(stackofcolliders.empty() == false){
                 vector<int> colliders = stackofcolliders[stackofcolliders.size()-1];
                 if (colliders[1] < 1000){
-                    //double min_time = calculateTimeToCollide(balls[colliders[0]],balls[colliders[1]]);
                     collide(colliders[0],colliders[1], min_time_to_collide);
                 }
                 else{ // duvarla çarpışma
-                    //double min_time = calculateTimeToCollideWall(balls[colliders[0]],colliders[1]-1000);
                     collideWithWall(colliders[0],colliders[1]-1000,min_time_to_collide);
                 }
                 stackofcolliders.pop_back();
@@ -399,8 +397,6 @@ vector<double> Program::calculateWallCollide(int i){
     double right = (balls[i].vx > 0)?calculateTimeToCollideWall(i,1):FMAX;
     double bottom = (balls[i].vy < 0)?calculateTimeToCollideWall(i,2):FMAX;
     double left = (balls[i].vx < 0)?calculateTimeToCollideWall(i,3):FMAX;
-
-    //cout << top <<" " <<right <<" "<< bottom <<" " <<left<<"\n";
 
     if(time > top && (top+0.0) >=0) {time = top;wall = 0;} 
     if(time > right && (right+0.0) >=0) {time = right;wall = 1;} 
@@ -455,9 +451,6 @@ double Program::calculateTimeToCollideWall(int i, double wall){
 }
 
 void Program::collideWithWall(int index, double wall, double time){
-
-
-    //timeSkip(time);
 
     collisionWithWallTimes[wall][index] = current_time;
     
