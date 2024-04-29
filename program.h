@@ -93,7 +93,7 @@ class Program{
         double calculateTimeToCollideWall(int i, double wall);
         vector<double> findClosestWallCollision(int i);
 
-        void printStack(){
+        void printStack(){ // ? It's for test mode.
             cout << "--------------------------\n";
             for(int i=0;i<stackofcolliders.size();i++){
                 for(int j=0;j<2;j++){
@@ -378,8 +378,8 @@ void Program::takeSnapshot(){
 
     for(int i=0;i<numberofballs;i++){
         json data;
-        data["x"] = balls[i].x;
-        data["y"] = balls[i].y;
+        data["x"] = round(balls[i].x * 1e6) / 1e6;  //balls[i].x;
+        data["y"] = round(balls[i].y * 1e6) / 1e6;  // balls[i].y;
         datas.push_back(data);
     }
 

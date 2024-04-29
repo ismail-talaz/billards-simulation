@@ -4,7 +4,7 @@
 
 int main(){
 
-    bool testmode = true;
+    bool testmode = false; // ? Testmode allows printing function in every collision.
     Program program = Program(testmode);
     program.startSimulation();
 
